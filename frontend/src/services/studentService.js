@@ -1,4 +1,6 @@
-const API_BASE_URL = '/bagsik/students';
+// Use environment variable VITE_API_BASE_URL if set (e.g. on Render), otherwise default to local proxy
+const BACKEND_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const API_BASE_URL = `${BACKEND_BASE}/bagsik/students`;
 
 /**
  * Fetch all students from the API
