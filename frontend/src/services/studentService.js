@@ -3,6 +3,22 @@ const BACKEND_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, ''
 const API_BASE_URL = `${BACKEND_BASE}/bagsik/students`;
 
 /**
+ * Safely parses response body as JSON without throwing 'Unexpected end of JSON input'
+ */
+async function safeJson(response) {
+  const text = await response.text();
+  if (!text || !text.trim()) {
+    return null;
+  }
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    console.warn('Response was not valid JSON:', text);
+    throw new Error(`Invalid response format from server: ${text.slice(0, 100)}`);
+  }
+}
+
+/**
  * Fetch all students from the API
  * @returns {Promise<Array>} List of students
  */
@@ -14,10 +30,12 @@ export async function getAllStudents() {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch students (Status: ${response.status})`);
+    const errorText = await response.text().catch(() => '');
+    throw new Error(`Failed to fetch students (${response.status}): ${errorText || response.statusText}`);
   }
 
-  return response.json();
+  const data = await safeJson(response);
+  return Array.isArray(data) ? data : [];
 }
 
 /**
@@ -33,10 +51,14 @@ export async function getStudentById(id) {
   });
 
   if (!response.ok) {
-    throw new Error(`Student with ID ${id} not found`);
+    throw new Error(`Student with ID ${id} not found (${response.status})`);
   }
 
-  return response.json();
+  const data = await safeJson(response);
+  if (!data) {
+    throw new Error(`Student with ID ${id} returned empty data`);
+  }
+  return data;
 }
 
 /**
@@ -55,11 +77,12 @@ export async function createStudent(studentData) {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Failed to create student (Status: ${response.status})`);
+    const errorText = await response.text().catch(() => '');
+    throw new Error(errorText || `Failed to create student (${response.status})`);
   }
 
-  return response.json();
+  const data = await safeJson(response);
+  return data || studentData;
 }
 
 /**
@@ -79,11 +102,12 @@ export async function updateStudent(id, studentData) {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Failed to update student (Status: ${response.status})`);
+    const errorText = await response.text().catch(() => '');
+    throw new Error(errorText || `Failed to update student (${response.status})`);
   }
 
-  return response.json();
+  const data = await safeJson(response);
+  return data || { id, ...studentData };
 }
 
 /**
@@ -97,8 +121,8 @@ export async function deleteStudent(id) {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Failed to delete student (Status: ${response.status})`);
+    const errorText = await response.text().catch(() => '');
+    throw new Error(errorText || `Failed to delete student (${response.status})`);
   }
 
   return response.text();

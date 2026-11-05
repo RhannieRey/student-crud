@@ -9,7 +9,7 @@ import java.net.URISyntaxException;
 import java.util.Optional;
 
 @CrossOrigin(origins = "*")
-@Controller
+@RestController
 @RequestMapping(path="/bagsik/students")
 public class StudentController {
 
